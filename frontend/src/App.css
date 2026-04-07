@@ -1,0 +1,384 @@
+/* F1 Podium Predictor Styling */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  color: #fff;
+  min-height: 100vh;
+}
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.app-header {
+  background: linear-gradient(90deg, #e10600 0%, #ff4444 100%);
+  padding: 40px 20px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.app-header h1 {
+  font-size: 3em;
+  margin-bottom: 10px;
+  font-weight: 900;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.app-header p {
+  font-size: 1.1em;
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+/* Container */
+.container {
+  flex: 1;
+  max-width: 1400px;
+  margin: 40px auto;
+  padding: 0 20px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* Circuit Selector */
+.circuit-selector {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.circuit-selector label {
+  font-weight: 700;
+  color: #ddd;
+  font-size: 1.05em;
+  white-space: nowrap;
+}
+
+.circuit-dropdown {
+  flex: 1;
+  min-width: 280px;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1em;
+  transition: all 0.3s ease;
+}
+
+.circuit-dropdown:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.circuit-dropdown:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #e10600;
+  box-shadow: 0 0 0 3px rgba(225, 6, 0, 0.2);
+}
+
+.circuit-dropdown option {
+  background: #2d2d2d;
+  color: #fff;
+}
+
+/* Grid Input Panel */
+.grid-input-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.grid-input-panel h2 {
+  margin-bottom: 10px;
+  font-size: 1.5em;
+  color: #e10600;
+  font-weight: 700;
+}
+
+.instructions {
+  color: #aaa;
+  font-size: 0.95em;
+  margin-bottom: 25px;
+  font-style: italic;
+}
+
+/* Grid Inputs Container */
+.grid-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+  margin-bottom: 25px;
+}
+
+.grid-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid-input-row label {
+  font-weight: 600;
+  font-size: 0.95em;
+  color: #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid-input-row .constructor {
+  color: #999;
+  font-size: 0.85em;
+  font-weight: 500;
+  display: block;
+  white-space: normal;
+}
+
+.grid-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1em;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.grid-input:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.grid-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #e10600;
+  box-shadow: 0 0 0 3px rgba(225, 6, 0, 0.2);
+}
+
+/* Error Box */
+.error-box {
+  background: rgba(255, 68, 68, 0.15);
+  border: 1px solid #ff4444;
+  border-radius: 6px;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  color: #ff9999;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+/* Predict Button */
+.predict-btn, .reset-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(90deg, #e10600 0%, #ff4444 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.05em;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(225, 6, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.predict-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(225, 6, 0, 0.5);
+}
+
+.predict-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.reset-btn {
+  margin-top: 20px;
+}
+
+.reset-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(225, 6, 0, 0.5);
+}
+
+/* Results Panel */
+.results-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(225, 6, 0, 0.3);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 8px 24px rgba(225, 6, 0, 0.15);
+  animation: slideIn 0.5s ease forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.results-panel h2 {
+  margin-bottom: 20px;
+  font-size: 1.5em;
+  color: #e10600;
+  font-weight: 700;
+}
+
+/* Results Table */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 25px;
+  font-size: 0.95em;
+}
+
+.results-table thead {
+  background: rgba(225, 6, 0, 0.1);
+  border-bottom: 2px solid rgba(225, 6, 0, 0.3);
+}
+
+.results-table th {
+  padding: 14px;
+  text-align: left;
+  font-weight: 700;
+  color: #e10600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9em;
+}
+
+.results-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.3s ease;
+}
+
+.results-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.results-table tbody tr.podium-row {
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.results-table tbody tr.podium-row:hover {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.results-table td {
+  padding: 12px 14px;
+  color: #ddd;
+}
+
+.results-table td.rank {
+  font-weight: 700;
+  color: #e10600;
+  font-size: 1.1em;
+}
+
+.results-table td.driver-name {
+  font-weight: 700;
+  color: #fff;
+}
+
+.results-table td.constructor {
+  color: #999;
+  font-size: 0.9em;
+}
+
+.results-table td.grid-pos {
+  font-weight: 600;
+  color: #fff;
+}
+
+.results-table td.probability {
+  text-align: right;
+  font-weight: 600;
+  color: #4caf50;
+}
+
+.results-table td.probability.ensemble {
+  color: #e10600;
+  font-size: 1.1em;
+}
+
+.results-table td.verdict {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.results-table td.verdict.podium {
+  background: rgba(76, 175, 80, 0.3);
+  color: #4caf50;
+  border: 1px solid #4caf50;
+}
+
+.results-table td.verdict.no-podium {
+  background: rgba(244, 67, 54, 0.3);
+  color: #f44336;
+  border: 1px solid #f44336;
+}
+
+/* Loading State Animation */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header h1 {
+    font-size: 2em;
+  }
+
+  .grid-inputs {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .results-table {
+    font-size: 0.85em;
+  }
+
+  .results-table th, .results-table td {
+    padding: 8px 10px;
+  }
+}
