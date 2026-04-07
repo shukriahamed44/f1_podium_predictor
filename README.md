@@ -1,348 +1,58 @@
-# F1 Podium Predictor - Complete Build Summary
+# F1 Podium Predictor
 
-## TL;DR: What You Have
+## Overview
 
-**Backend** (Flask):
-- Loads 2 trained ML models at startup
-- Holds lookup tables (drivers, constructors, circuits)
-- Serves REST API for predictions
-- Does the heavy lifting: lookup + embed + predict
+The F1 Podium Predictor is an end-to-end Machine Learning pipeline and web application designed to forecast podium finishes for Formula 1 races. Utilizing historical performance metrics and circuit data spanning from 2020 to 2024, the system leverages a robust ensemble model combining Random Forest and CatBoost classifiers to generate empirical win probabilities for all 22 grid positions.
 
-**Frontend** (React):
-- Beautiful, responsive UI
-- 4 user inputs (3 dropdowns + 1 slider)
-- Communicates with backend via HTTP
-- Displays results with probability percentages
+The application is decoupled into three primary segments: an offline model training pipeline (Jupyter Notebook), an inference-ready REST API backend (Flask), and a responsive client interface (React).
 
-**How They Talk**:
-```
-React (localhost:3000) ←→ Flask (localhost:5000)
-  ↓                            ↓
-User selects inputs      Backend loads models
-      ↓                        ↓
-Click "PREDICT"          Lookup stats + embed
-      ↓                        ↓
-Send 4 IDs             Run RF + CatBoost
-      ↓                        ↓
-Get probabilities        Average results
-      ↓                        ↓
-Display "78.5%"       Return JSON response
-```
+## Architecture
 
----
+- **Offline ML Pipeline (`GP26_ML_Project.ipynb`)**: Responsible for raw data cleaning, handling missing time-series metrics via backward/forward filling, dataset normalization, and offline model training. Post-analysis, it exports serialized model artifacts (`.pkl`, `.cbm`) alongside highly optimized Pandas lookup tables to bypass live database polling constraints during inference.
+- **Backend API (`/backend`)**: A lightweight Python Flask server. It ingests the serialized models and lookup tables into RAM on startup, enabling latency-optimized requests. It exposes RESTful endpoints (e.g., `/api/predict-batch`) to compute and serve high-throughput ensemble predictions.
+- **Frontend Interface (`/frontend`)**: A React.js single-page application orchestrating the client experience. It retrieves runtime data grids asynchronously, submits normalized HTTP payloads to the backend, and displays real-time ranked probabilistic verdicts for every grid position dynamically. 
 
-## Files Created
+## ML Pipeline Mechanics
 
-### Backend (Flask)
-| File | Size | Purpose |
-|------|------|---------|
-| `backend/app.py` | ~200 LOC | Flask server, all API endpoints |
-| `backend/requirements.txt` | 7 deps | Python packages needed |
+1. **Feature Engineering**: Native telemetry and race metrics are synthesized into critical interaction features directly impacting race pace (e.g., `grid_x_driver_consistency`). 
+2. **Data Leakage Mitigation**: Obvious post-race features (accumulated points, laps completed, fastest lap indices) are systematically purged early in the training array to guarantee models rely purely on pre-race intel.
+3. **Imbalanced Class Handling**: As podium finishes represent a heavy minority class, the classification algorithms enforce balanced class weights and strictly tune hyperparameters against the F1-Score (via GridSearchCV) rather than simple Accuracy.
+4. **Input Translation**: The live environment shields users from strict ML schema limits. Incoming user payloads require minimal native identifiers (driver, constructor, circuit indices) while the backend silently retrieves and scales complex parameters (historical win percentages) before passing the vector matrix to the ensemble models.
 
-### Frontend (React)
-| File | Size | Purpose |
-|------|------|---------|
-| `frontend/src/App.js` | ~150 LOC | Main UI component |
-| `frontend/src/App.css` | ~400 LOC | Styling (F1 themed) |
-| `frontend/src/index.js` | ~10 LOC | React entry |
-| `frontend/public/index.html` | ~20 LOC | HTML shell |
-| `frontend/package.json` | ~30 LOC | Dependencies |
+## Local Setup & Installation
 
-### Documentation
-| File | Purpose |
-|------|---------|
-| `SETUP.md` | Step-by-step installation guide |
-| `UI_PLAN.md` | Architecture & design decisions |
-| `BUILD_CHECKLIST.md` | What to do before running |
-| `CODE_WALKTHROUGH.md` | Detailed ML notebook explanation (updated) |
+Follow these steps to deploy and test the application on local system contexts. 
 
----
+### Prerequisites
+- Python 3.9+
+- Node.js 16+
 
-## Directory Structure (Final)
+### 1. Backend Service (Flask)
+Boot up the backend predictive API. The environment requires the generated `.pkl` and `.cbm` model artifacts within the root of its boundary to spin up successfully.
 
-```
-E:\Projects\F1 ML\
-├── GP26_ML_Project.ipynb          (your training notebook)
-├── F1 Races 2020-2024.csv         (training data)
-├── CODE_WALKTHROUGH.md            (updated with lookup explanation)
-├── UI_PLAN.md                     (created)
-├── SETUP.md                       (created)
-├── BUILD_CHECKLIST.md             (created)
-│
-├── backend/
-│   ├── app.py                     (created)
-│   ├── requirements.txt           (created)
-│   ├── driver_lookup.pkl          (⬅️ from notebook)
-│   ├── constructor_lookup.pkl     (⬅️ from notebook)
-│   ├── circuit_lookup.pkl         (⬅️ from notebook)
-│   ├── randomforest_f1_model.pkl  (⬅️ from notebook)
-│   ├── catboost_f1_model.cbm      (⬅️ from notebook)
-│   └── rf_feature_names.pkl       (⬅️ from notebook)
-│
-└── frontend/
-    ├── package.json               (created)
-    ├── public/
-    │   └── index.html             (created)
-    └── src/
-        ├── App.js                 (created)
-        ├── App.css                (created)
-        ├── index.js               (created)
-        └── index.css              (created)
-```
-
----
-
-## Backend: What's Running
-
-When you execute `python app.py`:
-
-1. **Startup (takes ~3 seconds)**
-   ```python
-   # Load models into memory
-   rf_model = joblib.load('randomforest_f1_model.pkl')
-   cat_model = joblib.load('catboost_f1_model.cbm')
-   
-   # Load lookup tables into memory
-   driver_lookup = joblib.load('driver_lookup.pkl')
-   constructor_lookup = joblib.load('constructor_lookup.pkl')
-   circuit_lookup = joblib.load('circuit_lookup.pkl')
-   ```
-   
-   ✓ Everything stays in memory (RAM) until server stops
-   ✓ Predictions now take milliseconds (no reloading)
-
-2. **Receiving a prediction request**
-   ```python
-   POST /api/predict {driver_id: 1, constructor_id: 3, circuit_id: 6, grid_position: 3}
-   ```
-   
-   ✓ Backend receives 4 integers (IDs + position)
-   ✓ Looks up driver ID in `driver_lookup` → gets age, wins, podium %
-   ✓ Looks up constructor ID → gets team performance stats
-   ✓ Looks up circuit ID → gets track features (length, turns)
-   ✓ Combines all features into single DataFrame
-   ✓ Passes to both models
-   ✓ Returns probabilities
-
-3. **Models actually predict**
-   ```python
-   # Build feature vector
-   features = {grid: 3, driver_age: 25, wins: 3, podium%: 0.45, ...}
-   
-   # Random Forest says:
-   rf_prob = rf_model.predict_proba(features)[0]  # [0.238, 0.762]
-   # Probability of podium = 76.2%
-   
-   # CatBoost says:
-   cat_prob = cat_model.predict_proba(features)[0]  # [0.192, 0.808]
-   # Probability of podium = 80.8%
-   
-   # Ensemble averages:
-   ensemble = (76.2% + 80.8%) / 2 = 78.5%
-   ```
-
-4. **Returns JSON response** (instant)
-   ```json
-   {
-     "driver_id": 1,
-     "constructor_id": 3,
-     "circuit_id": 6,
-     "grid_position": 3,
-     "random_forest_podium_chance": "76.2%",
-     "catboost_podium_chance": "80.8%",
-     "ensemble_podium_chance": "78.5%",
-     "prediction": "PODIUM"
-   }
-   ```
-
----
-
-## Frontend: What Users See
-
-### Screen 1: Input Panel
-```
-═══════════════════════════════════════════
-     🏎️ F1 PODIUM PREDICTOR
-     Predict your driver's podium chances
-═══════════════════════════════════════════
-
-[Driver Dropdown         ▼]
-[Constructor Dropdown   ▼]
-[Circuit Dropdown       ▼]
-[Grid Position Slider: 3 ━━━●━━━]
-
-         [PREDICT PODIUM]
-```
-
-### Screen 2: Results Panel (appears after clicking)
-```
-═══════════════════════════════════════════
-           PREDICTION RESULT
-
-     Driver 1 @ Constructor 3
-     Grid: P3 → Circuit 6
-
-╔═════════════════════════════════════════╗
-║         OVERALL PREDICTION              ║
-║                78.5%                    ║
-║              PODIUM ✓                   ║
-╚═════════════════════════════════════════╝
-
-  Random Forest      CatBoost       Ensemble
-     76.2%            80.8%          78.5%
-
-       [TRY ANOTHER PREDICTION]
-```
-
----
-
-## How This Actually Works (Deep Dive)
-
-### Problem with Raw IDs
-```python
-# BAD: Can't use raw IDs for predictions
-model.predict([1, 3, 6, 3])  # What do these numbers even mean?
-
-# These are database keys, not features!
-# Model trained on: age, wins, podium%, track_length, etc.
-```
-
-### Solution: Lookup Tables + Embedding
-```python
-# User input: Simple 4 values
-user_input = {
-    driver_id: 1,
-    constructor_id: 3,
-    circuit_id: 6,
-    grid_position: 3
-}
-
-# Step 1: Lookup
-driver_data = driver_lookup[driver_lookup['driverId'] == 1]
-driver_age = driver_data['driver_age'].values[0]
-driver_wins = driver_data['wins'].values[0]
-driver_podium_pct = driver_data['podium_%'].values[0]
-# ... and so on for constructor and circuit
-
-# Step 2: Embed (combine)
-features = {
-    'grid': 3,
-    'driver_age': 25,
-    'wins': 3,
-    'podium_%': 45.2,
-    'constructor_top3_%': 52.1,
-    'track_length': 5.278,
-    'track_turns': 14,
-    # ... interaction features ...
-    'grid_x_consistency': 3 * 0.452,
-    'age_x_wins': 25 * 3
-}
-
-# Step 3: Predict
-prediction = model.predict_proba(features)  # Now it makes sense!
-```
-
-**Why this design?**
-- Users don't need to understand ML
-- System is flexible (can add new drivers/circuits without retraining)
-- Hides complexity while maintaining accuracy
-- Production-grade architecture
-
----
-
-## Performance Expectations
-
-| Operation | Time |
-|-----------|------|
-| Backend startup | ~3 seconds |
-| Single prediction | ~10-50 ms |
-| API round-trip | ~100-200 ms (network) |
-| User sees result | ~200-300 ms total |
-
-**Bottleneck:** Network latency (not computation)
-
----
-
-## What Makes This Production-Ready
-
-✅ **Error handling**: All inputs validated  
-✅ **CORS enabled**: Frontend can communicate with backend  
-✅ **Health check endpoint**: Monitor service status  
-✅ **Efficient**: Models cached in memory (no reloading)  
-✅ **Lookup tables**: Fast O(1) lookups via pandas  
-✅ **Async-ready**: Can handle multiple predictions simultaneously  
-✅ **Responsive UI**: Works on mobile and desktop  
-✅ **Scalable**: Can deploy to cloud with zero code changes  
-
----
-
-## Deployment Path (Future)
-
-### Local (Development)
 ```bash
-Terminal 1: cd backend && python app.py
-Terminal 2: cd frontend && npm start
-Browser: http://localhost:3000
+cd backend
+pip install -r requirements.txt
+python app.py
 ```
 
-### Cloud (Production)
-```
-Frontend → Vercel (free)
-Backend → Railway (free tier available)
-Models → Bundled with backend service
+The Flask server will mount at `http://localhost:5000` and locally cache the model graphs into available memory. Ensure this subsystem remains active to serve requests.
 
-User → Vercel → Railway → Models
-(all on internet, no localhost needed)
-```
+### 2. Frontend Application (React)
+Initialize a separate terminal session to orchestrate the client interface.
 
----
-
-## What's Different from Old System
-
-| Aspect | Old | New |
-|--------|-----|-----|
-| Input | Must understand ML features | Simple dropdowns + slider |
-| Lookup | Manual (user's job) | Automatic (system handles) |
-| Embedding | N/A | Automatic feature combination |
-| UI | Jupyter notebook | Professional React app |
-| Scalability | Limited | Production-ready |
-| User experience | Technical | Friendly |
-
----
-
-## One-Command Quick Start
-
-After setup, to run everything:
-
-**Terminal 1:**
 ```bash
-cd "E:\Projects\F1 ML\backend" && python app.py
+cd frontend
+npm install
+npm start
 ```
+The React development server will start locally at `http://localhost:3000`. The frontend maps endpoints to handle Cross-Origin Resource Sharing (CORS) natively with the backend structure. 
 
-**Terminal 2:**
-```bash
-cd "E:\Projects\F1 ML\frontend" && npm start
-```
+## Production Deployment Environment
 
-**Browser:**
-```
-http://localhost:3000
-```
+The repository supports native transitions to standard continuous deployment clouds:
 
----
+- **Backend Layers**: Best processed via encapsulated Docker containers, or directly deployed onto optimized Python-serving environments such as Heroku, AWS (Elastic Beanstalk/Lambda via Zappa), or Railway.
+- **Frontend Client**: Build properties are fully compatible with Vercel, Netlify, or Cloudflare platforms for edge network hosting. 
 
-## Summary
-
-You now have a **complete ML application**:
-- ✅ Trained models (Random Forest + CatBoost)
-- ✅ Backend API serving predictions
-- ✅ Responsive web UI for users
-- ✅ Lookup-based feature embedding (no retraining needed)
-- ✅ Production-quality code
-- ✅ Zero technical knowledge required from users
-
-**Next step**: Follow SETUP.md to install and run. Takes ~15 minutes total.
-
----
-
-**Built with** 🏎️ F1, 🤖 ML, ⚛️ React, 🐍 Flask
+For deployment transitions, ensure the hardcoded local endpoint mapping variable in `frontend/src/App.js` transitions to the live remote domain URI prior to the finalized UI build step.
